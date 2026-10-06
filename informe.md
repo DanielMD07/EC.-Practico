@@ -13,7 +13,7 @@
 
 | V | Descripción | Ejemplo Concreto | Presente en CSV | Futura Ampliación |
 |---|-------------|------------------|-----------------|-------------------|
-| **Volumen** | Cantidad masiva de datos generados | 100,000 mediciones de sensores; si se ampliara a 1,000 sensores con mediciones cada segundo = 86 mil millones de registros diarios | ✅ CSV actual tiene 100K registros | ✅ Ampliación: miles de sensores x segundos = petabytes/día |
+| **Volumen** | Cantidad masiva de datos generados | 100,000 mediciones de sensores; si se ampliara a 1,000 sensores con mediciones cada segundo = 86.4 millones de registros diarios | ✅ CSV actual tiene 100K registros | ✅ Ampliación: miles de sensores x segundos = gigabytes/día, terabytes al año |
 | **Velocidad** | Rapidez con la que se generan y procesan los datos | Actualmente: 1 medición/minuto/sensor. Futura: 1 medición/segundo = 40 sensores x 86,400 segundos = 3.4M registros/día | ⚠️ Procesamiento batch (lento) | ✅ Necesitará procesamiento en tiempo real (streaming) |
 | **Variedad** | Tipos y formatos distintos de datos | CSV estructurado actual; futuro: JSON de sensores, fotografías de máquinas (imágenes), reportes de mantenimiento (texto libre), videos de camaras de vigilancia | ✅ Estructurado (CSV) | ✅ Semiestructurado (JSON), No estructurado (fotos, reportes) |
 | **Veracidad** | Calidad, confiabilidad e integridad de los datos | Datos simulados; en producción: sensor con calibración desajustada reportando temp. 150°C cuando es 75°C, lecturas perdidas por desconexión temporal | ✅ Datos simulados y confiables | ❓ Requiere validación en tiempo real |
@@ -58,7 +58,7 @@
 
 Si la empresa ampliara a **1,000 sensores** con **mediciones cada segundo**:
 
-1. **Volumen:** ~86 mil millones registros/día = 1.5TB/día de almacenamiento
+1. **Volumen:** ~86.4 millones registros/día ≈ 4 GB/día en CSV (≈1.5 TB/año) de almacenamiento
 2. **Memoria:** Imposible cargar todo en RAM (típica: 16GB)
 3. **Procesamiento:** Python secuencial tardaría semanas en analizar un día de datos
 4. **I/O:** Leer/escribir disco sería cuello de botella
@@ -252,32 +252,33 @@ def procesar_evento(evento):
 
 Dos hallazgos REALES del análisis del CSV:
 
-**Hallazgo 1: Alertas concentradas en Planta_1 y Planta_4**
-- Total de alertas (temp > 85°C) en el CSV: **~2,847 alertas** de 100,000 registros
-- Planta_1: 34% de alertas (962 registros)
-- Planta_4: 31% de alertas (887 registros)
-- Planta_2: 18% de alertas (512 registros)
-- Planta_3: 17% de alertas (486 registros)
+**Hallazgo 1: Alertas distribuidas de forma casi uniforme, con Planta_3 ligeramente arriba**
+- Total de alertas (temp > 85°C) en el CSV: **6,954 alertas** de 100,000 registros (6.95%)
+- Planta_3: 25.6% de alertas (1,777 registros)
+- Planta_1: 25.0% de alertas (1,737 registros)
+- Planta_4: 24.9% de alertas (1,732 registros)
+- Planta_2: 24.6% de alertas (1,708 registros)
+- Sensor con más alertas: **S027 (Planta_3), 211 alertas**
 
-**Conclusión:** Plantas 1 y 4 tienen casi 2/3 de todas las anomalías de temperatura.
+**Conclusión:** Ninguna planta concentra las anomalías de forma desproporcionada; Planta_3 es la que más alertas tiene, pero con una diferencia pequeña (69 alertas más que Planta_2).
 
 **Hallazgo 2: Temperatura máxima registrada**
-- Máxima detectada: **98.48°C** (Sensor S040, Planta_4, inicio del archivo)
-- Promedio general: ~68°C
-- Rango: 45-98°C (53°C de amplitud)
+- Máxima detectada: **104.99°C** (Sensor S023, Planta_3, 01/09/26 22:23)
+- Promedio general: 66.65°C (promedios por planta entre 66.53°C y 66.77°C)
+- Rango: 45.00–104.99°C (~60°C de amplitud)
 
-**Conclusión:** Hay variabilidad significativa; máquinas de Planta_4 pueden alcanzar casi 100°C.
+**Conclusión:** Las temperaturas promedio son muy similares entre plantas, pero existen picos aislados que superan los 100°C, por lo que conviene vigilar sensores individuales y no solo promedios por planta.
 
 ---
 
 ### Analítica Predictiva: "¿Qué podría ocurrir?"
 
-**Pregunta:** ¿Qué máquinas en Planta_4 tienen riesgo de falla crítica en las próximas 2 semanas?
+**Pregunta:** ¿Qué máquinas en Planta_3 tienen riesgo de falla crítica en las próximas 2 semanas?
 
 **Datos Adicionales Necesarios:**
-1. **Historial de fallas:** "Sensor S040 ha fallado 3 veces en 6 meses cuando temp promedio semanal > 90°C"
+1. **Historial de fallas:** "Sensor S027 ha fallado 3 veces en 6 meses cuando temp promedio semanal > 90°C"
 2. **Mantenimiento preventivo:** "Después de mantenimiento, vibración desciende 40%, durabilidad aumenta 6 meses"
-3. **Edad del equipo:** "Sensor S040 tiene 4 años; fabricante garantiza 5 años a temp < 85°C promedio"
+3. **Edad del equipo:** "Sensor S027 tiene 4 años; fabricante garantiza 5 años a temp < 85°C promedio"
 4. **Patrón temporal:** "Las máquinas fallan más en lunes (carga de fin de semana sin vigilancia)"
 5. **Correlación multivariable:** ¿Temperatura + vibración + humedad simultáneamente altas predicen falla?
 
@@ -291,24 +292,24 @@ Si Riesgo > 0.8 → Falla esperada en 14 días → Programar mantenimiento
 
 ### Analítica Prescriptiva: "¿Qué debemos hacer?"
 
-**Riesgo Previsto:** Planta_4 tiene 31% de alertas; máquinas cercanas a falla
+**Riesgo Previsto:** Planta_3 tiene el mayor número de alertas (1,777); el sensor S027 acumula 211 alertas y el S023 registró el máximo de 104.99°C
 
-**Acción Propuesta:** Ejecutar mantenimiento preventivo en Sensor S040 esta semana
+**Acción Propuesta:** Ejecutar mantenimiento preventivo en los sensores S027 y S023 (Planta_3) esta semana
 
 **Información a Revisar Antes de Decidir:**
 
 1. **Costo-Beneficio:**
    - Costo de mantenimiento preventivo: $500
-   - Costo de paro por falla: $50,000 (producción perdida) × 12 horas = $25,000 minutos
+   - Costo de paro por falla: $50,000 (producción perdida en un paro de 12 horas)
    - **Decisión:** Si probabilidad de falla > 2%, vale la pena
 
 2. **Disponibilidad de Recursos:**
    - ¿Técnico disponible esta semana?
    - ¿Pieza de reemplazo en almacén?
-   - ¿Puedo parar Planta_4 2 horas sin afectar producción?
+   - ¿Puedo parar Planta_3 2 horas sin afectar producción?
 
 3. **Datos de Confiabilidad:**
-   - ¿Qué % de sensores con patrón similar a S040 fallaron en 30 días? (Si 0%, es falsa alarma; si 80%, es crítico)
+   - ¿Qué % de sensores con patrón similar a S027 fallaron en 30 días? (Si 0%, es falsa alarma; si 80%, es crítico)
    - ¿Cuántos días más puedo esperar sin riesgo?
 
 4. **Impacto Operacional:**
@@ -316,9 +317,9 @@ Si Riesgo > 0.8 → Falla esperada en 14 días → Programar mantenimiento
    - Si hago mantenimiento HOY: parada planificada con equipo completo (mejor)
 
 **Conclusión de la Prescripción:**
-> "**Ejecutar mantenimiento preventivo en Sensor S040 (Planta_4) mañana a las 14:00.** 
-> Razón: 31% de anomalías concentrado en esta planta; sensor S040 alcanzó 98°C. 
-> Costo previsto ($500) << Costo de falla ($25,000). 
+> "**Ejecutar mantenimiento preventivo en los sensores S027 y S023 (Planta_3) mañana a las 14:00.** 
+> Razón: Planta_3 tiene más alertas (1,777); S027 acumula 211 alertas y S023 alcanzó 104.99°C. 
+> Costo previsto ($500) << Costo de falla ($50,000). 
 > Revisar tasa de falla histórica de sensores con patrón similar para validar urgencia."
 
 ---
@@ -326,7 +327,7 @@ Si Riesgo > 0.8 → Falla esperada en 14 días → Programar mantenimiento
 ## Conclusión General
 
 Este proyecto demuestra el ciclo completo del análisis de datos masivos:
-- **Descriptiva:** Identificar problemas (alertas en Planta_4)
+- **Descriptiva:** Identificar problemas (alertas en Planta_3 y sensores S027 y S023)
 - **Predictiva:** Proyectar consecuencias (posible falla en 2 semanas)
 - **Prescriptiva:** Recomendar acción (mantenimiento preventivo hoy)
 
