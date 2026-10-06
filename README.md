@@ -29,8 +29,8 @@ El archivo `sensores_industriales.csv` contiene:
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone <URL_DEL_REPOSITORIO>
-   cd manejo-datos-sensor
+   git clone https://github.com/DanielMD07/EC.-Practico.git
+   cd EC.-Practico
    ```
 
 2. **Crear entorno virtual:**
@@ -68,7 +68,7 @@ Además, creará un archivo `resultados/alertas.csv` con todas las mediciones qu
 ## Estructura del Proyecto
 
 ```
-manejo-datos-sensor/
+EC.-Practico/
 ├── data/
 │   └── sensores_industriales.csv    # Datos de entrada
 ├── resultados/
